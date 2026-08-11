@@ -1,0 +1,12 @@
+.env
+.venv/
+venv/
+__pycache__/
+*.pyc
+.DS_Store
+.vercel/
+*_backup_*.json
+fetch_history/*_backup_*.json
+data/*_backup_*.json
+data/ssq_history.json
+data/dlt_history.json

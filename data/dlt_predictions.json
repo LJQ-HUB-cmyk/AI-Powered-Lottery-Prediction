@@ -1,0 +1,93 @@
+{
+  "prediction_date": "2026-06-11",
+  "target_period": "26065",
+  "model_id": "deepseek-chat",
+  "model_name": "DeepSeek",
+  "predictions": [
+    {
+      "group_id": 1,
+      "strategy": "增强型热号追随者",
+      "red_balls": [
+        "13",
+        "15",
+        "20",
+        "26",
+        "31"
+      ],
+      "blue_balls": [
+        "01",
+        "02"
+      ],
+      "description": "前区基于多周期加权高频热号，三大区均衡分布；后区为近20期最高频活跃号。",
+      "blue_ball": "01"
+    },
+    {
+      "group_id": 2,
+      "strategy": "增强型冷号逆向者",
+      "red_balls": [
+        "04",
+        "08",
+        "14",
+        "25",
+        "28"
+      ],
+      "blue_balls": [
+        "05",
+        "10"
+      ],
+      "description": "选长遗漏待回补号码，兼顾奇偶2:3、大小3:2、多尾数；后区为遗漏4-10期回补号。",
+      "blue_ball": "05"
+    },
+    {
+      "group_id": 3,
+      "strategy": "增强型平衡策略师",
+      "red_balls": [
+        "06",
+        "12",
+        "18",
+        "29",
+        "35"
+      ],
+      "blue_balls": [
+        "04",
+        "09"
+      ],
+      "description": "中频号组合，奇偶3:2、大小3:2、和值98，无连号；后区跨度控制、频率适中。",
+      "blue_ball": "04"
+    },
+    {
+      "group_id": 4,
+      "strategy": "增强型周期理论家",
+      "red_balls": [
+        "07",
+        "17",
+        "21",
+        "24",
+        "33"
+      ],
+      "blue_balls": [
+        "02",
+        "12"
+      ],
+      "description": "优选趋势分上升及周期转折号，区间分布均衡；后区为当前遗漏接近均值号码。",
+      "blue_ball": "02"
+    },
+    {
+      "group_id": 5,
+      "strategy": "增强型综合决策者",
+      "red_balls": [
+        "09",
+        "13",
+        "20",
+        "28",
+        "34"
+      ],
+      "blue_balls": [
+        "01",
+        "07"
+      ],
+      "description": "融合热度、遗漏、趋势、平衡多维评分，候选池综合筛选，三大区均有分布。",
+      "blue_ball": "01"
+    }
+  ]
+}

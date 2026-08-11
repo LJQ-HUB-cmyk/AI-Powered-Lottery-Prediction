@@ -1,0 +1,33 @@
+# Vercel
+.vercel
+
+# macOS
+.DS_Store
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+*.egg-info/
+scripts/
+fetch_history/
+doc/
+.github/
+*.py
+requirements.txt
+.env
+.env.*
+
+# Backup files
+*_backup_*.json
+
+# Logs
+*.log
+
+# IDE
+.vscode/
+.idea/

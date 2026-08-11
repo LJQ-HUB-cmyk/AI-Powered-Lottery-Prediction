@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>深算 · 双色球 DeepSeek 预测</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,600;0,9..40,700;1,9..40,400&family=IBM+Plex+Mono:wght@500;600&family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
+  <script type="module" src="js/ssq.js"></script>
+</head>
+<body>
+  <div id="loading" class="loading">
+    <div class="loading-inner">
+      <div class="spinner"></div>
+      <div id="loadingText">正在载入开奖与预测数据…</div>
+    </div>
+  </div>
+
+  <div id="app" class="shell hidden">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark">深<span>算</span></div>
+        <div class="brand-sub">DeepSeek Lottery Lab</div>
+      </div>
+      <nav class="lottery-switch" aria-label="玩法切换">
+        <a class="active" href="index.html">双色球</a>
+        <a href="dlt.html">大乐透</a>
+      </nav>
+    </header>
+
+    <section class="hero">
+      <div class="hero-grid">
+        <div>
+          <div class="hero-kicker">Only DeepSeek</div>
+          <h1>双色球开奖研究台</h1>
+          <p class="hero-lead">单一模型、五组策略。定时抓取开奖，自动生成预测并回写仓库，供静态站展示与复盘。</p>
+        </div>
+        <div class="hero-meta">
+          <div class="hero-meta-item"><span>下期期号</span><strong id="heroPeriod">—</strong></div>
+          <div class="hero-meta-item"><span>开奖日期</span><strong id="heroDate">—</strong></div>
+          <div class="hero-meta-item"><span>开奖时间</span><strong id="heroWeekday">—</strong></div>
+          <div class="hero-meta-item"><span>数据更新</span><strong id="heroUpdated">—</strong></div>
+        </div>
+      </div>
+    </section>
+
+    <div class="tabs" role="tablist">
+      <button class="tab-btn active" data-tab="prediction">DeepSeek 预测</button>
+      <button class="tab-btn" data-tab="analysis">图表分析</button>
+      <button class="tab-btn" data-tab="history">历史回溯</button>
+    </div>
+
+    <section class="panel active" data-panel="prediction">
+      <div class="section-head">
+        <div>
+          <h2>本期预测</h2>
+          <p>目标期 <strong id="predPeriod">—</strong> · 生成于 <span id="predDate">—</span></p>
+        </div>
+      </div>
+      <div id="statusBanner" class="banner info hidden"></div>
+      <div id="strategyList" class="strategy-list"></div>
+    </section>
+
+    <section class="panel" data-panel="analysis">
+      <div class="section-head">
+        <div>
+          <h2>图表分析</h2>
+          <p>近 30 期频率与近期命中走势</p>
+        </div>
+      </div>
+      <div class="stats-grid">
+        <div class="chart-block">
+          <h3>红球出现频率</h3>
+          <div class="chart-wrap"><canvas id="chartRed"></canvas></div>
+        </div>
+        <div class="chart-block">
+          <h3>蓝球出现频率</h3>
+          <div class="chart-wrap"><canvas id="chartBlue"></canvas></div>
+        </div>
+        <div class="chart-block">
+          <h3>历史最佳命中</h3>
+          <div class="chart-wrap"><canvas id="chartHits"></canvas></div>
+        </div>
+        <div class="chart-block">
+          <h3>红球和值走势</h3>
+          <div class="chart-wrap"><canvas id="chartSum"></canvas></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" data-panel="history">
+      <div class="section-head">
+        <div>
+          <h2>历史回溯</h2>
+          <p>预测归档与开奖记录</p>
+        </div>
+      </div>
+      <div id="archiveList" class="archive-list"></div>
+      <div class="history-table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>期号</th>
+              <th>日期</th>
+              <th>开奖号码</th>
+            </tr>
+          </thead>
+          <tbody id="historyBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <footer class="footer">
+      <p><strong>免责声明：</strong>本站数据与 DeepSeek 预测仅供娱乐与研究，不构成任何购彩建议。彩票开奖结果具有随机性。</p>
+    </footer>
+  </div>
+</body>
+</html>
