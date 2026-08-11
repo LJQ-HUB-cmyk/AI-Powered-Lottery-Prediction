@@ -11,13 +11,107 @@ export function $all(sel, root = document) {
 }
 
 export async function loadJson(path) {
-  const res = await fetch(path);
+  const url = `${path}${path.includes("?") ? "&" : "?"}_=${Date.now()}`;
+  const res = await fetch(url, { cache: "no-store" });
   if (!res.ok) throw new Error(`加载失败: ${path} (${res.status})`);
   return res.json();
 }
 
 export function pad2(n) {
   return String(n).padStart(2, "0");
+}
+
+/** 解析球号输入：支持空格、逗号、顿号等分隔 */
+export function parseBallQuery(text) {
+  if (!text || !String(text).trim()) return [];
+  const seen = new Set();
+  const out = [];
+  for (const part of String(text).split(/[\s,，、;；|/\\-]+/)) {
+    if (!part) continue;
+    const n = parseInt(part, 10);
+    if (!Number.isFinite(n) || n <= 0) continue;
+    const ball = pad2(n);
+    if (seen.has(ball)) continue;
+    seen.add(ball);
+    out.push(ball);
+  }
+  return out;
+}
+
+/**
+ * 按期号 / 红球 / 蓝球筛选历史开奖。
+ * 红球、蓝球均为「包含全部查询号」；多条件 AND。
+ */
+export function filterHistoryDraws(draws, { period = "", reds = [], blues = [] } = {}) {
+  const periodQ = String(period || "").trim();
+  return (draws || []).filter((d) => {
+    if (periodQ && !String(d.period || "").includes(periodQ)) return false;
+    if (reds.length && !reds.every((b) => (d.red_balls || []).includes(b))) return false;
+    if (blues.length) {
+      const drawBlue = d.blue_balls
+        ? d.blue_balls
+        : d.blue_ball
+          ? Array.isArray(d.blue_ball)
+            ? d.blue_ball
+            : [d.blue_ball]
+          : [];
+      if (!blues.every((b) => drawBlue.includes(b))) return false;
+    }
+    return true;
+  });
+}
+
+export function setupHistorySearch({ draws, isDlt = false, render }) {
+  const form = $("#historySearch");
+  if (!form || typeof render !== "function") return;
+
+  const periodInput = $("#searchPeriod");
+  const redInput = $("#searchRed");
+  const blueInput = $("#searchBlue");
+  const meta = $("#historySearchMeta");
+  const defaultLimit = 100;
+  const searchLimit = 500;
+
+  const run = () => {
+    const period = periodInput?.value || "";
+    const reds = parseBallQuery(redInput?.value || "");
+    const blues = parseBallQuery(blueInput?.value || "");
+    const active = Boolean(period.trim() || reds.length || blues.length);
+    const matched = filterHistoryDraws(draws, { period, reds, blues });
+    const limit = active ? searchLimit : defaultLimit;
+    const rows = matched.slice(0, limit);
+
+    if (meta) {
+      if (!active) {
+        meta.textContent = `共 ${draws.length} 期 · 默认展示最近 ${rows.length} 期`;
+      } else if (matched.length === 0) {
+        meta.textContent = "无匹配结果，试试放宽条件";
+      } else if (matched.length > limit) {
+        meta.textContent = `匹配 ${matched.length} 期 · 展示前 ${limit} 期`;
+      } else {
+        meta.textContent = `匹配 ${matched.length} 期`;
+      }
+    }
+
+    render(rows, { reds, blues, isDlt, active });
+  };
+
+  form.addEventListener("submit", (e) => {
+    e.preventDefault();
+    run();
+  });
+
+  const resetBtn = $("#searchReset");
+  if (resetBtn) {
+    resetBtn.addEventListener("click", () => {
+      if (periodInput) periodInput.value = "";
+      if (redInput) redInput.value = "";
+      if (blueInput) blueInput.value = "";
+      run();
+    });
+  }
+
+  run();
 }
 
 export function compareSsq(prediction, actual) {

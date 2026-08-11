@@ -95,10 +95,29 @@
       <div class="section-head">
         <div>
           <h2>历史回溯</h2>
-          <p>预测归档与开奖记录</p>
+          <p>预测归档与开奖记录 · 支持期号 / 前区 / 后区查询</p>
         </div>
       </div>
       <div id="archiveList" class="archive-list"></div>
+      <form id="historySearch" class="history-search" autocomplete="off">
+        <label class="history-field">
+          <span>期号</span>
+          <input id="searchPeriod" type="search" inputmode="numeric" placeholder="如 26090 或 260" />
+        </label>
+        <label class="history-field">
+          <span>前区</span>
+          <input id="searchRed" type="search" inputmode="numeric" placeholder="如 09 14 17，含全部才匹配" />
+        </label>
+        <label class="history-field">
+          <span>后区</span>
+          <input id="searchBlue" type="search" inputmode="numeric" placeholder="如 02 09" />
+        </label>
+        <div class="history-search-actions">
+          <button type="submit" class="btn-primary">查询</button>
+          <button type="button" id="searchReset" class="btn-ghost">重置</button>
+        </div>
+      </form>
+      <p id="historySearchMeta" class="history-search-meta"></p>
       <div class="history-table-wrap">
         <table>
           <thead>

@@ -88,6 +88,37 @@ def validate_prediction(prediction: Dict[str, Any]) -> bool:
     return True
 
 
+def dlt_combo_key(group: Dict[str, Any]) -> tuple:
+    reds = tuple(sorted(str(x).zfill(2) for x in group.get("red_balls", [])))
+    blues = tuple(normalize_blue_balls(group.get("blue_balls", group.get("blue_ball"))))
+    return reds, blues
+
+
+def build_dlt_history_keys(draws: list) -> Dict[tuple, str]:
+    keys: Dict[tuple, str] = {}
+    for draw in draws or []:
+        key = dlt_combo_key(normalize_draw(draw) if "blue_balls" in draw or "blue_ball" in draw else draw)
+        keys.setdefault(key, str(draw.get("period", "")))
+    return keys
+
+
+def find_dlt_conflicts(groups: list, history_keys: Dict[tuple, str]) -> list:
+    conflicts = []
+    seen: Dict[tuple, int] = {}
+    for group in groups:
+        key = dlt_combo_key(group)
+        gid = group.get("group_id", "?")
+        if key in history_keys:
+            conflicts.append(
+                f"第{gid}组 {' '.join(key[0])}+{' '.join(key[1])} 与历史期 {history_keys[key]} 完全相同"
+            )
+        if key in seen:
+            conflicts.append(f"第{gid}组 与第{seen[key]}组号码完全相同")
+        else:
+            seen[key] = gid
+    return conflicts
+
+
 def call_deepseek(client: OpenAI, prompt: str) -> Dict[str, Any]:
     print(f"  正在调用 {MODEL_NAME} ({MODEL_ID})...")
     response = client.chat.completions.create(
@@ -194,7 +225,10 @@ def generate_prediction() -> Optional[Dict[str, Any]]:
     print(f"目标期号: {target_period}")
     print(f"开奖日期: {target_date}\n")
 
-    prompt = prompt_template.format(
+    history_keys = build_dlt_history_keys(lottery_data.get("data") or [])
+    print(f"历史组合去重库: {len(history_keys)} 期\n")
+
+    base_prompt = prompt_template.format(
         target_period=target_period,
         target_date=target_date,
         lottery_history=history_json,
@@ -204,14 +238,53 @@ def generate_prediction() -> Optional[Dict[str, Any]]:
     )
 
     client = OpenAI(api_key=API_KEY, base_url=BASE_URL)
-    prediction = call_deepseek(client, prompt)
-    prediction["prediction_date"] = prediction.get("prediction_date") or prediction_date
-    prediction["target_period"] = prediction.get("target_period") or target_period
-    prediction["model_id"] = MODEL_ID
-    prediction["model_name"] = MODEL_NAME
+    max_attempts = 3
+    extra = ""
+    prediction: Optional[Dict[str, Any]] = None
 
-    if not validate_prediction(prediction):
-        print("验证失败")
+    for attempt in range(1, max_attempts + 1):
+        prompt = base_prompt + extra
+        print(f"尝试生成 {attempt}/{max_attempts} ...")
+        try:
+            prediction = call_deepseek(client, prompt)
+        except Exception as exc:
+            print(f"  调用失败: {exc}")
+            continue
+
+        prediction["prediction_date"] = prediction.get("prediction_date") or prediction_date
+        prediction["target_period"] = prediction.get("target_period") or target_period
+        prediction["model_id"] = MODEL_ID
+        prediction["model_name"] = MODEL_NAME
+
+        if not validate_prediction(prediction):
+            print("  结构验证失败，重试")
+            continue
+
+        conflicts = find_dlt_conflicts(prediction["predictions"], history_keys)
+        if not conflicts:
+            print("  历史去重校验通过\n")
+            break
+
+        print("  发现与历史/组内重复：")
+        for line in conflicts:
+            print(f"    - {line}")
+        banned = []
+        for group in prediction["predictions"]:
+            reds, blues = dlt_combo_key(group)
+            banned.append(f"{' '.join(reds)} + {' '.join(blues)}")
+        extra = (
+            "\n\n## 去重重试约束\n"
+            "上一版预测存在与历史完全相同或组内重复的号码，必须全部更换。\n"
+            "禁止再次使用以下组合：\n"
+            + "\n".join(f"- {item}" for item in banned)
+            + "\n每组 5 前区 + 2 后区 必须是历史从未完整开出过的新组合。\n"
+        )
+        prediction = None
+    else:
+        prediction = None
+
+    if not prediction:
+        print("验证失败（含历史去重）")
         return None
 
     return {

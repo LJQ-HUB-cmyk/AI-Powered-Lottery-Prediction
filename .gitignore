@@ -10,3 +10,6 @@ fetch_history/*_backup_*.json
 data/*_backup_*.json
 data/ssq_history.json
 data/dlt_history.json
+# AI Log Plugin 推荐忽略项
+.specstory/
+.ailog/

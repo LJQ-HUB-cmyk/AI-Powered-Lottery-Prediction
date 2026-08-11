@@ -29,11 +29,12 @@ class LotteryDataFetcher:
     """双色球数据获取器"""
     
     def __init__(self):
-        self.base_url = "https://datachart.500.com/ssq/history/history.shtml"
+        self.base_url = "https://datachart.500.com/ssq/history/newinc/history.php"
         self.headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
             'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
             'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
+            'Referer': 'https://datachart.500.com/ssq/history/history.shtml',
         }
         self.session = requests.Session()
         self.session.headers.update(self.headers)
@@ -80,60 +81,44 @@ class LotteryDataFetcher:
         data_list = []
         
         try:
-            # 查找数据表格 - 500彩票网的表格结构
-            table = soup.find('tbody')
+            # 优先使用 history.php 的 tdata 表体
+            table = soup.find('tbody', id='tdata') or soup.find('tbody') or soup.find('table')
             if not table:
-                # 尝试查找 table 标签
-                table = soup.find('table')
-                if not table:
-                    print("未找到数据表格")
-                    return data_list
-            
-            # 获取所有数据行
+                print("未找到数据表格")
+                return data_list
+
             rows = table.find_all('tr')
             if not rows:
                 print("表格中没有数据行")
                 return data_list
-            
+
             for row in rows:
                 cols = row.find_all('td')
-                
-                # 确保列数足够
                 if len(cols) < 9:
                     continue
-                
+
                 try:
-                    # 提取期号
                     period = cols[0].text.strip()
-                    
-                    # 提取红球（6个）
-                    red_balls = [cols[i].text.strip() for i in range(1, 7)]
-                    
-                    # 提取蓝球
-                    blue_ball = cols[7].text.strip()
-                    
-                    # 提取开奖日期（如果有）
+                    if not period.isdigit():
+                        continue
+                    red_balls = [cols[i].text.strip().zfill(2) for i in range(1, 7)]
+                    blue_ball = cols[7].text.strip().zfill(2)
                     date = cols[-1].text.strip() if len(cols) > 8 else ""
-                    
-                    # 构建数据对象
-                    lottery_item = {
+                    data_list.append({
                         "period": period,
                         "red_balls": red_balls,
                         "blue_ball": blue_ball,
-                        "date": date
-                    }
-                    
-                    data_list.append(lottery_item)
-                    
+                        "date": date,
+                    })
                 except Exception as e:
                     print(f"解析行数据时出错: {e}")
                     continue
-            
+
             print(f"成功解析 {len(data_list)} 期数据")
-            
+
         except Exception as e:
             print(f"解析数据时发生错误: {e}")
-        
+
         return data_list
     
     def merge_with_existing_data(self, new_data, existing_file):
@@ -321,57 +306,73 @@ class LotteryDataFetcher:
         except Exception as e:
             print(f"保存文件时出错: {e}")
     
-    def fetch_and_save(self, output_file="lottery_data.json", preserve_history=True):
+    def fetch_and_save(self, output_file="lottery_data.json", preserve_history=True, start=None, end=None):
         """
         获取并保存数据的主函数
 
         Args:
             output_file: 输出文件名
             preserve_history: 是否保留并合并历史数据
+            start: 起始期号（如 \"03001\"），不传则使用站点默认区间
+            end: 结束期号（如 \"26091\"），不传则使用站点默认区间
         """
         print("=" * 50)
         print("双色球历史开奖数据获取工具")
         print("=" * 50)
 
-        # 获取网页
-        soup = self.fetch_page(self.base_url)
+        url = self.base_url
+        params = []
+        if start:
+            params.append(f"start={start}")
+        if end:
+            params.append(f"end={end}")
+        if params:
+            url = f"{url}?{'&'.join(params)}"
+            print(f"请求区间: {start or '?'} -> {end or '?'}")
 
+        soup = self.fetch_page(url)
         if not soup:
             print("获取网页失败，请检查网络连接或稍后重试")
             return False
 
-        # 解析数据
         lottery_data = self.parse_lottery_data(soup)
-
         if not lottery_data:
             print("未能解析到任何数据")
             return False
 
-        # 显示最新几期数据作为预览
         print("\n最新 5 期数据预览：")
         print("-" * 50)
         for item in lottery_data[:5]:
             red_str = " ".join(item['red_balls'])
             print(f"期号: {item['period']} | 红球: {red_str} | 蓝球: {item['blue_ball']} | 日期: {item['date']}")
 
-        # 保存数据
         self.save_to_json(lottery_data, output_file, preserve_history)
-
         return True
 
 
 def main():
     """主函数"""
     fetcher = LotteryDataFetcher()
-    
-    # 可以自定义输出文件名
+
     output_file = "lottery_data.json"
-    
-    if len(sys.argv) > 1:
-        output_file = sys.argv[1]
-    
-    success = fetcher.fetch_and_save(output_file)
-    
+    start = None
+    end = None
+
+    args = sys.argv[1:]
+    i = 0
+    while i < len(args):
+        if args[i] == "--start" and i + 1 < len(args):
+            start = args[i + 1]
+            i += 2
+        elif args[i] == "--end" and i + 1 < len(args):
+            end = args[i + 1]
+            i += 2
+        else:
+            output_file = args[i]
+            i += 1
+
+    success = fetcher.fetch_and_save(output_file, start=start, end=end)
+
     if success:
         print("\n✓ 数据获取完成！")
         print(f"✓ 文件位置: {output_file}")

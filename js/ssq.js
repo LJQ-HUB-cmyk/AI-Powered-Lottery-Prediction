@@ -1,6 +1,5 @@
 import {
   $,
-  $all,
   loadJson,
   compareSsq,
   renderBalls,
@@ -10,6 +9,7 @@ import {
   clearCharts,
   makeBarChart,
   makeLineChart,
+  setupHistorySearch,
 } from "./shared.js";
 
 const STRATEGY_SHORT = {
@@ -57,7 +57,11 @@ async function main() {
 
   renderPredictions(prediction.predictions || [], actualForTarget);
   renderArchives(predHistory.predictions_history || []);
-  renderHistoryTable(history.data || []);
+  setupHistorySearch({
+    draws: history.data || [],
+    isDlt: false,
+    render: renderHistoryTable,
+  });
 
   let analysisDone = false;
   window.addEventListener("render-analysis", () => {
@@ -120,19 +124,36 @@ function renderArchives(records) {
   });
 }
 
-function renderHistoryTable(rows) {
+function renderHistoryTable(rows, opts = {}) {
   const tbody = $("#historyBody");
   tbody.innerHTML = "";
-  rows.slice(0, 80).forEach((d) => {
+  const { reds = [], blues = [], active = false } = opts;
+
+  if (!rows.length) {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td colspan="3" style="color:var(--ink-soft)">没有符合条件的开奖记录</td>`;
+    tbody.appendChild(tr);
+    return;
+  }
+
+  rows.forEach((d) => {
     const tr = document.createElement("tr");
     tr.innerHTML = `
       <td class="mono">${d.period}</td>
       <td>${d.date}</td>
       <td><div class="balls" data-balls></div></td>
     `;
+    const hits = active
+      ? {
+          red_hits: reds.filter((b) => (d.red_balls || []).includes(b)),
+          blue_hit: blues.length ? blues.includes(d.blue_ball) : false,
+          blue_hits: blues.filter((b) => b === d.blue_ball),
+        }
+      : null;
     renderBalls(tr.querySelector("[data-balls]"), {
       red: d.red_balls,
       blue: d.blue_ball,
+      hits,
     });
     tbody.appendChild(tr);
   });
