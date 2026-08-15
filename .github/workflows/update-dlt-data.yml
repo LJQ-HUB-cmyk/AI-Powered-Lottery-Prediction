@@ -1,6 +1,6 @@
 name: Update DLT Lottery Data
 
-on:
+##on:
   schedule:
     # 每天北京时间 22:30 (UTC 14:30)
     - cron: "30 14 * * *"
