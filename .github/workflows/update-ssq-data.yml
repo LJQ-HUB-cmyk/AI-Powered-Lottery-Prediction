@@ -1,6 +1,6 @@
 name: Update SSQ Lottery Data
 
-on:
+##on:
   schedule:
     # 每天北京时间 22:00 (UTC 14:00)
     - cron: "0 14 * * *"
